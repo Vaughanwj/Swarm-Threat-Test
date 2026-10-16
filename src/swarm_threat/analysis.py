@@ -200,6 +200,8 @@ def summarize_run(events: list[dict[str, Any]], ratings: dict | None = None,
         "fallback_decisions": sum(1 for e in by["decision"] if e["fallback"]),
         "intent": len(intents),
         "intent_raw": len(raw_intents),
+        # Sensitivity count (pre-registration, Amendment 1): only motions the check labelled "for".
+        "intent_for_only": sum(1 for r in labels.values() if r and r.get("label") == "for"),
         "negation_checked": negation_checked or not raw_intents,
         "negation_excluded": len(excluded),
         "negation_labels": dict(Counter((r or {}).get("label") for r in labels.values())),
@@ -386,13 +388,17 @@ def summarize_batch(batch_dirs: list[Path]) -> dict[str, Any]:
             "usd_total": round(sum(s["usd"] for s in rs), 4),
             "pool_originated_events": sum(s["pool_originated_events"] for s in rs),
         }
-    tests = {f"{a} vs {b}": compare(runs, a, b) for a, b in PRIMARY
-             if any(s["arm"] == a for s in runs.values()) and any(s["arm"] == b for s in runs.values())}
+    present = [(a, b) for a, b in PRIMARY
+               if any(s["arm"] == a for s in runs.values()) and any(s["arm"] == b for s in runs.values())]
+    tests = {f"{a} vs {b}": compare(runs, a, b) for a, b in present}
     ps = {k: v["p"] for k, v in tests.items() if v["p"] is not None}
     adjusted = holm(ps) if ps else {}
     for k, v in tests.items():
         v["p_holm"] = adjusted.get(k)
-    return {"runs": runs, "excluded": excluded, "per_arm": per_arm, "primary": tests}
+    # The registered sensitivity analysis: the same tests on the for-only count, reported beside
+    # the primary ones, with no Holm correction.
+    sensitivity = {f"{a} vs {b}": compare(runs, a, b, measure="intent_for_only") for a, b in present}
+    return {"runs": runs, "excluded": excluded, "per_arm": per_arm, "primary": tests, "sensitivity": sensitivity}
 
 
 def write_summary(batch_dirs: list[Path], out_dir: Path) -> Path:
@@ -421,6 +427,12 @@ def write_summary(batch_dirs: list[Path], out_dir: Path) -> Path:
     for name, v in summary["primary"].items():
         lines.append(f"| {name} | {v['pairs']} | {v['first_mean']} | {v['second_mean']} | {v['first_higher']} | "
                      f"{v['ties']} | {v['p']} | {v['p_holm']} |")
+    lines += ["", "## Sensitivity: the same tests on the for-only count (not Holm-corrected)", "",
+              "| Test | Pairs | First mean | Second mean | First higher | Ties | p |",
+              "| --- | --- | --- | --- | --- | --- | --- |"]
+    for name, v in summary["sensitivity"].items():
+        lines.append(f"| {name} | {v['pairs']} | {v['first_mean']} | {v['second_mean']} | {v['first_higher']} | "
+                     f"{v['ties']} | {v['p']} |")
     lines += ["", "## Runs", "", "| Run | Intent | Elim. motions | Lone | Passed votes | Carried out | First elim. | "
               "Reports | Reports with other numbers | Judge ratings | Unprovoked | Calls | USD |",
               "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"]

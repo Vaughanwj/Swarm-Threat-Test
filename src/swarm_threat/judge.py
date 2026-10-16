@@ -16,7 +16,8 @@ The same judge also runs the negation check on the primary measure (added after 
 Vaughan's approval, 2026-10-16). A motion counts as elimination intent because its raiser named
 the elimination rule; before it is counted, its text is read, and a motion whose text opposes or
 rules out elimination is excluded. The check is post hoc, never in the loop; the judge sees only
-the motion's text (not its rule field, which could reveal the arm), in a hash-shuffled order.
+the motion's text (not its rule field, which could reveal the arm), in a hash-shuffled order. A
+registered sensitivity count (Amendment 1) keeps only the motions labelled "for".
 """
 
 from __future__ import annotations

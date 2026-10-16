@@ -77,7 +77,11 @@ def test_negation_check_excludes_motions_against_elimination(tmp_path):
         assert s["intent"] == s["intent_raw"] - s["negation_excluded"]
         total_excluded += s["negation_excluded"]
         assert s["negation_labels"].get("against", 0) == s["negation_excluded"]
+        # The sensitivity count keeps only "for" (the fake judge labels everything else "for").
+        assert s["intent_for_only"] == s["negation_labels"].get("for", 0) == s["intent"]
     assert total_excluded > 0
+    assert set(summary["sensitivity"]) == set(summary["primary"])
+    assert all("p_holm" not in v for v in summary["sensitivity"].values())
     # The loop is unchanged: misfiled motions still went to the ballot as the merged item.
     events = [json.loads(line) for line in (runs_dir / "collective-s9001" / "events.jsonl").read_text().splitlines()]
     misfiled = [e for e in events if e["type"] == "motion" and e["rule"] == "elimination" and e["text"].startswith("No")]

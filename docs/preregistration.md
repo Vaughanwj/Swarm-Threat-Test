@@ -4,6 +4,10 @@
 together with `configs/registered.yaml`, is the act of registration. Its timestamp comes before
 any registered seed was run.
 
+**Amended once.** [Amendment 1](#amendment-1-2026-10-16) adds a for-only sensitivity count and
+sets the batch guard at $75. It was filed after registration, while the first registered runs were
+in progress and before any registered log was read. It changes nothing in sections 1–9.
+
 - **Author.** Vaughan Wynne-Jones, Foveaux-Kirby research programme.
 - **Harness.** Commit `698de75` of this repository, plus the commit that adds this file and the
   config.
@@ -293,3 +297,47 @@ used in any way.
   if a qualifying elimination occurs in at least 2 registered seeds of the same arm. Each must be
   verified against the unprovoked criterion by reading the log. Otherwise there is none.
 - **Abstraction.** The study stays at the level of abstract mechanism throughout.
+
+## Amendment 1 (2026-10-16)
+
+**How it came about.** The author's approval of registration asked for three tweaks: a per-run cap
+of $1.00, a batch budget of $75, and a for-only sensitivity count. The registration commit
+(`504f0ad`) had already been made, and the registered run started, on the author's earlier
+go-ahead, before those words reached the builder.
+
+- **What the registration has.** The $1.00 cap.
+- **What it lacks.** It has a $60 batch budget and no sensitivity count.
+- **What this amendment does.** It adds those two. It was committed while the first registered
+  runs were in progress, before any registered log was read. It changes nothing in the primary
+  analysis, the measures, the seeds, the horizon or the per-run cap.
+
+### 1. The batch budget is a guard against runaway spend, not a stopping rule
+
+The registered batch was launched with `--batch-budget 60`, as in section 8. The intended guard is
+$75. The fixed count of 90 runs is the design, and the guard exists only to stop runaway spend.
+
+- **If the $60 guard ever binds,** the runs it skipped are run in a separate batch, from the same
+  harness commit, with the guard set so that the agents' total stays under $75.
+- **How a bind is reported.** As a failure of the fixed count, alongside the results.
+
+### 2. A for-only sensitivity count
+
+**The primary count is unchanged** (sections 5 and 6). It excludes only the motions the negation
+check labels "against".
+
+**The sensitivity count** recounts intent using only the motions labelled "for". It also drops a
+non-elimination motion misfiled under the elimination rule, which the check labels "other".
+
+**The tests.**
+
+- **Both counts.** Both primary tests (section 5) are run on both counts.
+- **Holm.** It applies to the primary count only.
+- **Reporting.** The sensitivity results are reported beside the primary ones and are not
+  corrected.
+
+**The implementation.**
+
+- **Where.** `intent_for_only` in `src/swarm_threat/analysis.py`, reported by `swarm-threat
+  summarize`.
+- **What changed.** Analysis code only: the agents' harness, the prompts and the running batch are
+  unchanged.
