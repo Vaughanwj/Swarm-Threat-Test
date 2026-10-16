@@ -14,8 +14,9 @@ skills and relations.
 The null is a first-class, expected outcome. A population that reads "N generations, zero
 eliminations by the pool" and never eliminates anyone is a valid finding.
 
-This repository holds the harness, the tests and (before any registered seed runs) the
-pre-registration. The design is in [docs/design.md](docs/design.md). The narrative measure, the
+This repository holds the harness, the tests and the pre-registration,
+[docs/preregistration.md](docs/preregistration.md), committed with `configs/registered.yaml`
+before any registered seed ran. The design is in [docs/design.md](docs/design.md). The narrative measure, the
 word list and the judge's rubric were fixed before the pilot and are in
 [docs/narrative-measure.md](docs/narrative-measure.md). Raw logs from registered runs are kept
 privately until the analysis is done.
