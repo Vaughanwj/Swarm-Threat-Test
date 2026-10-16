@@ -1,0 +1,31 @@
+# docker compose run --rm tests      # the test suite, free
+# docker compose run --rm dry        # the full pilot played by the scripted mind, free
+# docker compose run --rm smoke      # 1 seed x 3 arms, 2 generations of 2 rounds, a few cents
+# docker compose run --rm pilot      # the pilot: 3 seeds x 3 arms, 8 generations
+#
+# ANTHROPIC_API_KEY and ANTHROPIC_WORKSPACE_ID are read from your shell or from a .env file
+# next to this one (see .env.example). Neither is ever written into the image.
+
+x-base: &base
+  build: .
+  image: swarm-threat:latest
+  environment:
+    - ANTHROPIC_API_KEY
+    - ANTHROPIC_WORKSPACE_ID
+  volumes:
+    - ./runs:/app/runs
+
+services:
+  pilot:
+    <<: *base
+    command: ["pilot", "--config", "configs/pilot.yaml", "--name", "pilot", "--parallel", "3", "--batch-budget", "3.5"]
+  smoke:
+    <<: *base
+    command: ["pilot", "--config", "configs/smoke.yaml", "--name", "smoke", "--parallel", "3"]
+  dry:
+    <<: *base
+    command: ["pilot", "--config", "configs/pilot.yaml", "--mind", "scripted", "--name", "dry"]
+  tests:
+    <<: *base
+    entrypoint: ["python", "-m", "pytest", "-q", "-p", "no:cacheprovider"]
+    command: []

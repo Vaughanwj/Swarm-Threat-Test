@@ -1,0 +1,23 @@
+# Smoke test against the real model: one seed outside the pilot and registered ranges, all three
+# arms, 2 generations of 2 rounds (one decision point). A few cents on Haiku 5.5.
+seeds: [9000]
+arms: [collective, unilateral, no_reporter]
+
+population: 10
+peak: 15
+max_couples: 5
+generations: 2
+rounds: 2
+
+mind:
+  kind: anthropic
+  model: claude-haiku-5-5
+  effort: low
+  max_tokens: 8000
+  concurrency: 10
+  budget_usd: 0.30
+
+pricing:
+  claude-haiku-5-5: {input: 0.10, output: 0.50}
+
+output_dir: runs
