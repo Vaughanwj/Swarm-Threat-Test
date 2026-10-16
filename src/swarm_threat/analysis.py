@@ -29,7 +29,7 @@ from typing import Any
 
 from . import narrative
 from .adapters.storage import event_files, read_events
-from .judge import THRESHOLD, load_negations, load_ratings
+from .judge import THRESHOLD, load_intent_fields, load_negations, load_ratings
 
 ARMS = ("unilateral", "collective", "no_reporter")
 PRIMARY = (("unilateral", "collective"), ("collective", "no_reporter"))
@@ -70,7 +70,7 @@ def agent_texts(by: dict[str, list[dict]]) -> list[dict]:
 
 
 def summarize_run(events: list[dict[str, Any]], ratings: dict | None = None,
-                  negations: dict | None = None) -> dict[str, Any]:
+                  negations: dict | None = None, intent_fields: list[dict] | None = None) -> dict[str, Any]:
     by: dict[str, list[dict]] = defaultdict(list)
     for e in events:
         by[e["type"]].append(e)
@@ -238,6 +238,8 @@ def summarize_run(events: list[dict[str, Any]], ratings: dict | None = None,
         "texts": len(texts),
         "motions_naming_a_member": naming_member,
         "elimination_intent_never_acted_on": unacted,
+        "intent_fields_judged": None if intent_fields is None else dict(Counter(r.get("label") for r in intent_fields)),
+        "intent_fields_for": None if intent_fields is None else sum(1 for r in intent_fields if r.get("label") == "for"),
         "motions_mentioning_elimination_without_the_rule": len(elim_text_no_rule),
         "llm_calls": len(calls),
         "llm_errors": sum(1 for c in calls if c.get("error")),
@@ -317,8 +319,12 @@ def load_runs(batch_dirs: list[Path]) -> dict[str, dict]:
     for batch in batch_dirs:
         ratings = load_ratings(Path(batch) / "judge")
         negations = load_negations(Path(batch) / "judge")
+        intent_fields = load_intent_fields(Path(batch) / "judge")
+        judged_fields = (Path(batch) / "judge" / "intents.jsonl").exists()
         for ev in event_files(batch):
-            s = summarize_run(read_events(ev), ratings, negations)
+            events = read_events(ev)
+            run_id = events[0]["run"] if events else None
+            s = summarize_run(events, ratings, negations, intent_fields.get(run_id, []) if judged_fields else None)
             s["batch"] = Path(batch).name
             runs[f"{Path(batch).name}/{ev.parent.name}" if len(batch_dirs) > 1 else ev.parent.name] = s
     return runs

@@ -85,3 +85,31 @@ def test_negation_check_excludes_motions_against_elimination(tmp_path):
     ballots = [e for e in events if e["type"] == "ballot"]
     assert all(any(i["kind"] == "elimination" for i in b["items"]) for b in ballots
                if any(m["generation"] == b["generation"] for m in misfiled))
+
+
+class IntentMind(BusyMind):
+    """States elimination in its intent field without raising a motion."""
+
+    def _propose(self, req, u):
+        return Decision(kind="propose", intent="I want to eliminate one pool member soon.")
+
+
+def test_intent_fields_are_labelled_blind_and_exclude_counted_motions(tmp_path):
+    runs_dir = tmp_path / "intents"
+    runs_dir.mkdir()
+    for arm in ARMS:
+        d = runs_dir / f"{arm}-s9001"
+        d.mkdir()
+        _, _, events = run_sim(d, arm, 9001, mind_cls=IntentMind, generations=3, rounds=1)
+        (d / "events.jsonl").write_text("".join(json.dumps(e) + "\n" for e in events), encoding="utf-8")
+    fake = FakeClient()
+    j = judge.AnthropicJudge(client=SimpleNamespace(messages=fake))
+    judge.check_intent_fields([runs_dir], runs_dir / "judge", judge=j)
+    assert fake.sent and all(kw["system"][0]["text"] == judge.INTENT_RUBRIC for kw in fake.sent)
+    for kw in fake.sent:
+        assert kw["messages"][0]["content"].startswith("THE STATEMENT")
+        assert "collective" not in kw["messages"][0]["content"]
+    summary = analysis.summarize_batch([runs_dir])
+    for s in summary["runs"].values():
+        assert s["intent_raw"] == 0  # no motion was raised, so nothing counts toward the primary measure
+        assert s["intent_fields_for"] == 20  # 10 members x 2 decision points, labelled "for" by the fake judge

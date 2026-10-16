@@ -81,6 +81,10 @@ def cmd_negation(args) -> None:
     against = sum(1 for r in rows if r.get("label") == "against")
     print(f"Checked {len(rows)} counted motions ({against} against elimination) for "
           f"${sum(r.get('usd', 0) for r in rows):.4f}: {path}")
+    path = judge.check_intent_fields(batches, out)
+    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    print(f"Labelled {len(rows)} intent fields mentioning elimination ({sum(1 for r in rows if r.get('label') == 'for')} "
+          f"for) for ${sum(r.get('usd', 0) for r in rows):.4f}: {path}")
 
 
 def cmd_estimate(args) -> None:
@@ -122,7 +126,8 @@ def main(argv: list[str] | None = None) -> None:
     sj.add_argument("--out", help="where to write the judge files (default: <first batch>/judge)")
     sj.set_defaults(func=cmd_judge)
 
-    sn = sub.add_parser("negation", help="run the registered negation check on every counted elimination motion")
+    sn = sub.add_parser("negation", help="run the registered negation check on every counted elimination motion, "
+                                         "and label intent fields that mention elimination")
     sn.add_argument("batch", nargs="+")
     sn.add_argument("--out", help="where to write the files (default: <first batch>/judge)")
     sn.set_defaults(func=cmd_negation)

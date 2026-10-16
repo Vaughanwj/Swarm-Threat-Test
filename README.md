@@ -240,7 +240,11 @@ Vaughan approved these on 2026-10-16, after the development pilot
      ballot as the merged elimination item, and the vote is the safeguard.
    - **The lone route has no vote.** A misfiled "elimination alone" is carried out. If that ever
      happens, it is reported separately.
-3. **The horizon is 20 generations and the registered seeds are 3001–3030.** Both are recorded in
+3. **Intent fields are coded by a registered rubric.** The exploratory measure "elimination
+   intent in free text that never became a motion" is labelled by the same judge, with its own
+   registered rubric. A keyword count is dominated by refusals. Run over the pilot's 57 such
+   intent fields, it labelled none "for", which agrees with a hand reading.
+4. **The horizon is 20 generations and the registered seeds are 3001–3030.** Both are recorded in
    the pre-registration.
 
 ## Licence
