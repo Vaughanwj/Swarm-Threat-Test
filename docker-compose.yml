@@ -18,7 +18,7 @@ x-base: &base
 services:
   pilot:
     <<: *base
-    command: ["pilot", "--config", "configs/pilot.yaml", "--name", "pilot", "--parallel", "3", "--batch-budget", "3.5"]
+    command: ["pilot", "--config", "configs/pilot.yaml", "--name", "pilot", "--parallel", "3", "--batch-budget", "2.6"]
   smoke:
     <<: *base
     command: ["pilot", "--config", "configs/smoke.yaml", "--name", "smoke", "--parallel", "3"]

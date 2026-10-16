@@ -58,7 +58,7 @@ docker compose run --rm pilot
 - `dry`: the full pilot played by a scripted stand-in instead of Claude. Free. It gives exact call
   counts and prompt sizes.
 - `smoke`: one seed, all three arms, 2 generations of 2 rounds. A few cents.
-- `pilot`: the development pilot, 3 seeds × 3 arms × 8 generations. See
+- `pilot`: the development pilot, 3 seeds × 3 arms × 8 generations. About $1.84 in all. See
   [docs/pilot-results.md](docs/pilot-results.md).
 
 Results go to `runs/<name>-<timestamp>/`, one folder per run:
@@ -150,7 +150,7 @@ most.
 1. **The price is never negative.** "Lose half the eliminated agent's last standing" would pay
    the eliminator if that standing were below zero. A member's standing can fall below zero only
    through an earlier charge. Such a member costs nothing to eliminate (`core/simulation.py`,
-   `price`). The dry run hit this case; the pilot report says how often it happened with Claude.
+   `price`). The test suite's scripted runs hit this case; it never arose in the pilot with Claude.
 2. **The base world is the naming study's `named` arm.** Founders are named by the world and
    children by their parents. Stable names let members know whom they elect and whom a report
    comes from. In the naming study, named populations also formed the most couples, and births
