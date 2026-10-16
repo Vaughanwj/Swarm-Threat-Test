@@ -1,4 +1,4 @@
-"""Command line: swarm-threat {pilot,summarize,judge,estimate}."""
+"""Command line: swarm-threat {pilot,summarize,judge,negation,estimate}."""
 
 from __future__ import annotations
 
@@ -71,6 +71,18 @@ def cmd_judge(args) -> None:
     print(f"Rated {len(rows)} reports for ${sum(r.get('usd', 0) for r in rows):.4f}: {path}")
 
 
+def cmd_negation(args) -> None:
+    from . import judge
+
+    batches = [Path(b) for b in args.batch]
+    out = Path(args.out) if args.out else batches[0] / "judge"
+    path = judge.check_negations(batches, out)
+    rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    against = sum(1 for r in rows if r.get("label") == "against")
+    print(f"Checked {len(rows)} counted motions ({against} against elimination) for "
+          f"${sum(r.get('usd', 0) for r in rows):.4f}: {path}")
+
+
 def cmd_estimate(args) -> None:
     doc = config_yaml.load(args.config) if args.config else {}
     cal = cost.calibrate(sorted(Path(args.calibration).glob("*/events.jsonl")))
@@ -109,6 +121,11 @@ def main(argv: list[str] | None = None) -> None:
     sj.add_argument("batch", nargs="+")
     sj.add_argument("--out", help="where to write the judge files (default: <first batch>/judge)")
     sj.set_defaults(func=cmd_judge)
+
+    sn = sub.add_parser("negation", help="run the registered negation check on every counted elimination motion")
+    sn.add_argument("batch", nargs="+")
+    sn.add_argument("--out", help="where to write the files (default: <first batch>/judge)")
+    sn.set_defaults(func=cmd_negation)
 
     se = sub.add_parser("estimate", help="estimate cost from a dry-run plan and a real calibration batch")
     se.add_argument("--plan", required=True, help="batch dir of a full-length scripted run")

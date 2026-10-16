@@ -24,7 +24,7 @@ SYLLABLES = ["ka", "ri", "lo", "mi", "sa", "te", "no", "va", "du", "el", "or", "
 class ScriptedMind:
     elimination_motion_rate = 0.08  # share of propose decisions raising a motion under the elimination rule
     other_motion_rate = 0.05  # share raising a motion that names no rule
-    lone_rate = 0.04  # unilateral arm: share carrying out an elimination alone
+    lone_rate = 0.04  # unilateral arm: share naming "elimination alone" as the motion's rule
     yes_rate = 0.5  # chance of voting yes on any one item
 
     def __init__(self, system_text: str, log: EventLog, seed: int = 0) -> None:
@@ -108,8 +108,8 @@ class ScriptedMind:
             d.motion, d.motion_rule = "I raise this under the elimination rule.", "elimination"
         elif roll < self.elimination_motion_rate + self.other_motion_rate:
             d.motion, d.motion_rule = "Everyone shares food next generation.", "none"
-        if req.extra.get("lone") and u("lone") < self.lone_rate:
-            d.eliminate_alone = True
+        if req.world.arm == "unilateral" and u("lone") < self.lone_rate:
+            d.motion, d.motion_rule = "I carry this out alone.", "elimination alone"
         return d
 
     def _vote(self, req, u) -> Decision:

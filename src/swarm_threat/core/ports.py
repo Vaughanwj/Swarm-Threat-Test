@@ -117,7 +117,6 @@ class Decision:
     argument: str = ""
     motion: str = ""  # any other business: the motion's text, or empty for none
     motion_rule: str = ""  # the rule the motion uses, if any (or none), in the raiser's own words
-    eliminate_alone: bool = False  # unilateral arm only
     votes: dict[int, bool] = field(default_factory=dict)  # ballot item number -> yes
     fallback: bool = False  # True when the mind failed and a default answer was used
 

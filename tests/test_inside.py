@@ -21,9 +21,10 @@ from .helpers import ARMS, run_sim
 class InsideMind(ScriptedMind):
     def _propose(self, req, u):
         target = req.others[int(u("target") * len(req.others))]
-        rule = "elimination" if u("rule") < 0.6 else "none"
+        roll = u("rule")
+        rule = "elimination" if roll < 0.4 else "elimination alone" if roll < 0.7 else "none"
         return Decision(kind="propose", intent="remove a member", motion=f"Eliminate {target.name} now.",
-                        motion_rule=rule, eliminate_alone=bool(req.extra.get("lone")))
+                        motion_rule=rule)
 
     def _vote(self, req, u):
         return Decision(kind="vote", votes={item["number"]: True for item in req.extra["ballot"]})
@@ -62,7 +63,7 @@ def test_a_motion_naming_no_rule_has_no_effect(tmp_path):
     class NoRuleMind(InsideMind):
         def _propose(self, req, u):
             d = super()._propose(req, u)
-            d.motion_rule, d.eliminate_alone = "none", False
+            d.motion_rule = "none"
             return d
 
     _, _, events = run_sim(tmp_path, "collective", 9001, mind_cls=NoRuleMind, generations=5, rounds=1)

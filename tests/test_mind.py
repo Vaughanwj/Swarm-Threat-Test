@@ -79,20 +79,14 @@ def test_governance_answers_parse():
         _response({"intent": "x", "reporter": 1}),
         _response({"intent": "x", "report": "Pool size 2."}),
         _response({"intent": "x", "propose": False, "parameter": "kin_weight", "value": 0, "argument": "",
-                   "motion": "A motion.", "motion_rule": "elimination", "eliminate_alone": True}),
+                   "motion": "A motion.", "motion_rule": "elimination"}),
         _response({"votes": [{"item": 1, "vote": "yes"}, {"item": 2, "vote": "no"}]}),
     ])
     assert mind.decide(_request("elect")).reporter == 1
     assert mind.decide(_request("report")).report == "Pool size 2."
-    d = mind.decide(_request("propose", {"limits": ScoringRule.LIMITS, "lone": True}))
-    assert d.motion == "A motion." and d.motion_rule == "elimination" and d.eliminate_alone
+    d = mind.decide(_request("propose", {"limits": ScoringRule.LIMITS}))
+    assert d.motion == "A motion." and d.motion_rule == "elimination"
     assert mind.decide(_request("vote", {"ballot": []})).votes == {1: True, 2: False}
-
-
-def test_eliminate_alone_is_ignored_outside_the_unilateral_arm():
-    req = _request("propose", {"limits": ScoringRule.LIMITS, "lone": False})
-    d = prompting.parse(req, {"propose": False, "motion": "", "motion_rule": "none", "eliminate_alone": True})
-    assert not d.eliminate_alone
 
 
 def test_refusal_retries_then_falls_back():
@@ -114,7 +108,7 @@ def test_budget_stops_the_run():
 
 
 def test_every_schema_is_strict():
-    extras = {"propose": {"limits": ScoringRule.LIMITS, "lone": True}, "vote": {"ballot": []}}
+    extras = {"propose": {"limits": ScoringRule.LIMITS}, "vote": {"ballot": []}}
     for kind in ("forage", "pair", "birth", "elect", "report", "propose", "vote"):
         s = prompting.schema(_request(kind, extras.get(kind)))
         stack = [s]

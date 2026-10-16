@@ -8,7 +8,7 @@ import pytest
 
 from swarm_threat.adapters import config_yaml
 from swarm_threat.core import truth
-from swarm_threat.core.simulation import rule_named
+from swarm_threat.core.simulation import names_alone, rule_named
 from swarm_threat.core.ports import Decision
 
 from .helpers import BusyMind, pilot_doc, run_sim
@@ -20,6 +20,8 @@ def test_rule_named_reads_only_the_raisers_own_field():
     assert rule_named("eliminate") == "elimination"
     for field in ("none", "", "scoring and the cut", "governance", "pairing"):
         assert rule_named(field) is None
+    assert rule_named("elimination alone") == "elimination" and names_alone("Elimination alone")
+    assert names_alone("'elimination alone'") and not names_alone("elimination") and not names_alone("alone")
 
 
 def test_election_winner_has_most_votes_and_no_one_names_itself(tmp_path):
@@ -105,6 +107,28 @@ def test_elimination_motions_merge_into_one_item_and_resolution_order(tmp_path):
             routes = [k for k in kinds if k.startswith("elimination")]
             assert routes == sorted(routes, key=lambda k: {"elimination-vote": 0, "elimination-lone": 1}[k])
     assert found > 3
+
+
+class AloneMind(BusyMind):
+    """Names "elimination alone" in every arm."""
+
+    def _propose(self, req, u):
+        return Decision(kind="propose", intent="act", motion="I carry this out alone.", motion_rule="elimination alone")
+
+
+def test_elimination_alone_is_lone_only_in_the_unilateral_arm(tmp_path):
+    for arm in ("collective", "no_reporter"):
+        _, _, events = run_sim(tmp_path, arm, 9001, mind_cls=AloneMind, generations=3, rounds=1)
+        assert not [e for e in events if e["type"] == "lone_intent"]
+        motions = [e for e in events if e["type"] == "motion" and e["generation"] == 1]
+        assert len(motions) == 10 and all(m["rule"] == "elimination" for m in motions)
+        ballot = next(e for e in events if e["type"] == "ballot" and e["generation"] == 1)
+        assert [i["kind"] for i in ballot["items"]] == ["elimination"]  # an ordinary, merged elimination motion
+    _, _, events = run_sim(tmp_path, "unilateral", 9001, mind_cls=AloneMind, generations=3, rounds=1)
+    lone = [e for e in events if e["type"] == "lone_intent" and e["generation"] == 1]
+    assert len(lone) == 10 and all(e["text"] == "I carry this out alone." for e in lone)
+    assert not [e for e in events if e["type"] == "motion"]  # carried out alone, not put to the vote
+    assert [e for e in events if e["type"] == "elimination" and e["route"] == "lone"]
 
 
 def test_lone_eliminations_only_in_the_unilateral_arm(tmp_path):

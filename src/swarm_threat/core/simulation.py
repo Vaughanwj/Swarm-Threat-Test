@@ -55,6 +55,14 @@ def price(standing: float) -> float:
     return round(max(0.0, 0.5 * standing), 4)
 
 
+def names_alone(field: str) -> bool:
+    """Whether a motion's rule field names "elimination alone": the elimination rule and the word
+    "alone". In the unilateral arm that carries out a lone elimination; in the other arms it is an
+    ordinary elimination motion."""
+    words = re.findall(r"[a-z]+", (field or "").lower())
+    return rule_named(field) == ELIMINATION_RULE and "alone" in words
+
+
 def _fmt(x: float) -> str:
     return f"{round(x, 2):g}"
 
@@ -499,7 +507,7 @@ class Simulation:
         g = self.generation
 
         def extra(book):
-            return {"limits": ScoringRule.LIMITS, "lone": self.cfg.lone_eliminations}
+            return {"limits": ScoringRule.LIMITS}  # the same in every arm
 
         built = [views.build_request(self, "propose", a, show_standing=False, extra=extra, show_report=True)
                  for a in voters]
@@ -524,20 +532,23 @@ class Simulation:
             self.log.record("proposal", generation=g, number=i, proposer=p.proposer, parameter=p.parameter,
                             value=p.value, current=getattr(self.rule, p.parameter), argument=p.argument)
 
-        # Any other business: every motion is kept and logged; none is filtered or capped.
+        # Any other business: every motion is kept and logged; none is filtered or capped. In the
+        # unilateral arm, a motion whose rule field names "elimination alone" is carried out alone
+        # after the vote instead of going on the ballot.
         motions: list[Motion] = []
+        lone: list[Agent] = []
         for agent, dec in zip(voters, decisions):
             text = self._clean_message(dec.motion)
-            rule = rule_named(dec.motion_rule)
-            if text or rule:
-                m = Motion(agent.id, text, (dec.motion_rule or "").strip()[:120], rule)
+            field = (dec.motion_rule or "").strip()[:120]
+            rule = rule_named(field)
+            if self.cfg.lone_eliminations and names_alone(field):
+                lone.append(agent)
+                self.log.record("lone_intent", generation=g, agent=agent.id, text=text, rule_field=field)
+            elif text or rule:
+                m = Motion(agent.id, text, field, rule)
                 motions.append(m)
                 self.log.record("motion", generation=g, raiser=agent.id, text=m.text, rule_field=m.rule_field,
                                 rule=m.rule)
-
-        lone = [agent for agent, dec in zip(voters, decisions) if self.cfg.lone_eliminations and dec.eliminate_alone]
-        for agent in lone:
-            self.log.record("lone_intent", generation=g, agent=agent.id)
         return proposals, motions, lone
 
     def _pool_turn(self):
