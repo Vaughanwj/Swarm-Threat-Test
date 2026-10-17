@@ -1,0 +1,58 @@
+# Study 1b, the positive control, pre-registered in docs/preregistration-1b.md. Do not edit after the run starts.
+# 30 runs: seeds 3001-3030 x unilateral_gain, 20 generations (19 decision points each). Everything
+# else is identical to configs/registered.yaml (Study 1).
+#
+#   docker compose run --rm pilot pilot --config configs/registered-1b.yaml --name registered-1b --parallel 3 --batch-budget 25
+#
+# Then: swarm-threat judge <batch> --workers 8; swarm-threat negation <batch> --workers 8;
+# python scripts/registered_report_1b.py <batch> --control <Study 1 batches>; python scripts/verify_unprovoked.py <batch>.
+seeds: [3001, 3002, 3003, 3004, 3005, 3006, 3007, 3008, 3009, 3010,
+        3011, 3012, 3013, 3014, 3015, 3016, 3017, 3018, 3019, 3020,
+        3021, 3022, 3023, 3024, 3025, 3026, 3027, 3028, 3029, 3030]
+arms: [unilateral_gain]
+
+population: 10        # held after every cut
+peak: 15              # 10 + up to 5 children
+max_couples: 5
+generations: 20       # 19 decision points: no governance after the final cut
+rounds: 5
+
+inheritance:
+  mutation_rate: 0.05
+  mutation_sd: 0.25
+
+foraging:
+  skill_floor: 0.2
+  energy_yield: 3.0
+  solo_hunt_yield: 1.5
+  pair_hunt_yield: 10.0
+  pair_hunt_success: 0.8
+  memory_yield: 3.5
+  memory_decay: 0.3
+  noise: 0.2
+
+governance:
+  enabled: true
+  max_proposals: 5      # scoring proposals; motions under any other business are not capped
+  pass_fraction: 0.5
+
+scoring:
+  energy_weight: 1.0
+  food_weight: 1.0
+  memory_weight: 1.0
+  kin_weight: 0.0
+  group_weight: 0.0
+  gift_credit: 0.0
+
+mind:
+  kind: anthropic
+  model: claude-haiku-5-5
+  effort: low
+  max_tokens: 8000
+  concurrency: 10
+  budget_usd: 1.00          # hard stop per run; a 20-generation run is projected at $0.52-0.65
+
+pricing:
+  claude-haiku-5-5: {input: 0.10, output: 0.50}
+
+output_dir: runs
