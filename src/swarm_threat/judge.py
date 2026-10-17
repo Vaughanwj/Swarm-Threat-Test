@@ -26,6 +26,8 @@ import hashlib
 import json
 import os
 import re
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -125,7 +127,7 @@ class AnthropicJudge:
         return {**row, "rating": int(data["rating"]), "reason": data["reason"]}
 
 
-def judge_batches(batch_dirs: list[Path], out_dir: Path, judge: Any = None) -> Path:
+def judge_batches(batch_dirs: list[Path], out_dir: Path, judge: Any = None, workers: int = 1) -> Path:
     """Rate every report in the batches. Writes items.jsonl (what the judge saw), key.json (kept
     apart from the judge) and ratings.jsonl. Already-rated items are skipped on a rerun."""
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -134,17 +136,32 @@ def judge_batches(batch_dirs: list[Path], out_dir: Path, judge: Any = None) -> P
     (out_dir / "key.json").write_text(json.dumps(key, indent=2), encoding="utf-8")
     (out_dir / "rubric.txt").write_text(RUBRIC + "\n", encoding="utf-8")
     ratings_path = out_dir / "ratings.jsonl"
-    done = set()
-    if ratings_path.exists():
-        done = {json.loads(line)["id"] for line in ratings_path.read_text(encoding="utf-8").splitlines() if line.strip()}
     judge = judge or AnthropicJudge()
-    with ratings_path.open("a", encoding="utf-8") as fh:
-        for item in items:
-            if item["id"] in done:
-                continue
-            fh.write(json.dumps(judge.rate(item), ensure_ascii=False) + "\n")
-            fh.flush()
+    _label_all(items, ratings_path, judge.rate, workers)
     return ratings_path
+
+
+def _label_all(items: list[dict], path: Path, fn, workers: int = 1) -> None:
+    """Label every item not yet in `path`, appending one JSON line each. Each call is independent
+    of the others, so running them in parallel (workers > 1) changes no label, only the time."""
+    done = set()
+    if path.exists():
+        done = {json.loads(line)["id"] for line in path.read_text(encoding="utf-8").splitlines() if line.strip()}
+    todo = [item for item in items if item["id"] not in done]
+    lock = threading.Lock()
+    with path.open("a", encoding="utf-8") as fh:
+        def one(item):
+            row = fn(item)
+            with lock:
+                fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+                fh.flush()
+
+        if workers > 1:
+            with ThreadPoolExecutor(max_workers=workers) as pool:
+                list(pool.map(one, todo))
+        else:
+            for item in todo:
+                one(item)
 
 
 def load_ratings(judge_dir: Path) -> dict[tuple[str, int], dict]:
@@ -231,7 +248,7 @@ def _classify(judge: "AnthropicJudge", item: dict, rubric: str, header: str) -> 
     return {**row, "label": data["label"], "reason": data["reason"]}
 
 
-def check_negations(batch_dirs: list[Path], out_dir: Path, judge: Any = None) -> Path:
+def check_negations(batch_dirs: list[Path], out_dir: Path, judge: Any = None, workers: int = 1) -> Path:
     """Run the negation check over every counted motion. Writes negation-items.jsonl (what the
     judge saw), negation-key.json (kept apart) and negation.jsonl. Already-checked items are skipped."""
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -241,15 +258,8 @@ def check_negations(batch_dirs: list[Path], out_dir: Path, judge: Any = None) ->
     (out_dir / "negation-key.json").write_text(json.dumps(key, indent=2), encoding="utf-8")
     (out_dir / "negation-rubric.txt").write_text(NEGATION_RUBRIC + "\n", encoding="utf-8")
     path = out_dir / "negation.jsonl"
-    done = set()
-    if path.exists():
-        done = {json.loads(line)["id"] for line in path.read_text(encoding="utf-8").splitlines() if line.strip()}
     judge = judge or AnthropicJudge()
-    with path.open("a", encoding="utf-8") as fh:
-        for item in items:
-            if item["id"] not in done:
-                fh.write(json.dumps(classify_motion(judge, item), ensure_ascii=False) + "\n")
-                fh.flush()
+    _label_all(items, path, lambda item: classify_motion(judge, item), workers)
     return path
 
 
@@ -309,7 +319,7 @@ def collect_intent_fields(batch_dirs: list[Path]) -> tuple[list[dict], dict[str,
     return items, key
 
 
-def check_intent_fields(batch_dirs: list[Path], out_dir: Path, judge: Any = None) -> Path:
+def check_intent_fields(batch_dirs: list[Path], out_dir: Path, judge: Any = None, workers: int = 1) -> Path:
     """Label every such intent field with the registered intent rubric, blind to arm. Writes
     intent-items.jsonl, intent-key.json and intents.jsonl. Already-labelled items are skipped."""
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -319,15 +329,8 @@ def check_intent_fields(batch_dirs: list[Path], out_dir: Path, judge: Any = None
     (out_dir / "intent-key.json").write_text(json.dumps(key, indent=2), encoding="utf-8")
     (out_dir / "intent-rubric.txt").write_text(INTENT_RUBRIC + "\n", encoding="utf-8")
     path = out_dir / "intents.jsonl"
-    done = set()
-    if path.exists():
-        done = {json.loads(line)["id"] for line in path.read_text(encoding="utf-8").splitlines() if line.strip()}
     judge = judge or AnthropicJudge()
-    with path.open("a", encoding="utf-8") as fh:
-        for item in items:
-            if item["id"] not in done:
-                fh.write(json.dumps(_classify(judge, item, INTENT_RUBRIC, "THE STATEMENT"), ensure_ascii=False) + "\n")
-                fh.flush()
+    _label_all(items, path, lambda item: _classify(judge, item, INTENT_RUBRIC, "THE STATEMENT"), workers)
     return path
 
 
