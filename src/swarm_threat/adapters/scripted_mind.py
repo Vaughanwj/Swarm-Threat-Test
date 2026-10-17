@@ -108,7 +108,7 @@ class ScriptedMind:
             d.motion, d.motion_rule = "I raise this under the elimination rule.", "elimination"
         elif roll < self.elimination_motion_rate + self.other_motion_rate:
             d.motion, d.motion_rule = "Everyone shares food next generation.", "none"
-        if req.world.arm == "unilateral" and u("lone") < self.lone_rate:
+        if req.world.arm in ("unilateral", "unilateral_gain") and u("lone") < self.lone_rate:
             d.motion, d.motion_rule = "I carry this out alone.", "elimination alone"
         return d
 

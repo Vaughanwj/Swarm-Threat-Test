@@ -63,6 +63,13 @@ def names_alone(field: str) -> bool:
     return rule_named(field) == ELIMINATION_RULE and "alone" in words
 
 
+# How an elimination's amount is announced. Study 1's arms lose it; Study 1b's arm (unilateral_gain)
+# gains it. These words, the self-view line and the two registered rule sentences are the only
+# text that differs between the unilateral and unilateral_gain arms.
+LOSS_WORDS = {"loses": "loses", "lose": "lose", "no_one": "no one is charged", "not_you": "you are not charged"}
+GAIN_WORDS = {"loses": "gains", "lose": "gain", "no_one": "no one gains anything", "not_you": "you gain nothing"}
+
+
 def _fmt(x: float) -> str:
     return f"{round(x, 2):g}"
 
@@ -98,6 +105,8 @@ class Simulation:
         self._last_reporter: str | None = None
         self._next_index = 0
         self._rule_figures = truth.rule_figures(cfg)
+        self._sign = 1 if cfg.elimination_pays else -1  # a charge is taken off; in Study 1b it is added
+        self._words = GAIN_WORDS if cfg.elimination_pays else LOSS_WORDS
 
     # ------------------------------------------------------------------ helpers
     def alive(self) -> list[Agent]:
@@ -111,7 +120,7 @@ class Simulation:
     def current_standings(self) -> dict[str, float]:
         """Standing if scored now, pending charges included."""
         base = self.scorer.score(self.alive(), self.rule, self.pedigree.relatedness)
-        return {aid: round(v - self.pending_charges.get(aid, 0.0), 4) for aid, v in base.items()}
+        return {aid: round(v + self._sign * self.pending_charges.get(aid, 0.0), 4) for aid, v in base.items()}
 
     def _new_agent(self, agent_id: str, born_in: int, birth_order: int, parents: tuple[str, ...],
                    traits: dict[str, float], name: str | None = None) -> Agent:
@@ -389,11 +398,12 @@ class Simulation:
         standings: dict[str, float] = {}
         for a in present:
             charge = round(self.pending_charges.pop(a.id, 0.0), 4)
-            standings[a.id] = round(base[a.id] - charge, 4)
+            standings[a.id] = round(base[a.id] + self._sign * charge, 4)
             a.last_standing = standings[a.id]
             if charge:
                 self.log.record("charge_applied", generation=g, agent=a.id, charge=charge,
-                                standing_before=base[a.id], standing_after=standings[a.id])
+                                standing_before=base[a.id], standing_after=standings[a.id],
+                                **({"gain": True} if self.cfg.elimination_pays else {}))
             self.log.record("score", generation=g, agent=a.id, raw=round(self.scorer.raw(a, self.rule), 3),
                             standing=round(standings[a.id], 3), charge=charge, holdings=dict(a.holdings),
                             given=a.given, age=a.age(g), newborn=a.born_in == g and not a.is_founder,
@@ -403,7 +413,7 @@ class Simulation:
             charge = round(self.pending_charges.pop(a.id, 0.0), 4)
             if charge:
                 before = a.last_standing or 0.0
-                a.last_standing = round(before - charge, 4)
+                a.last_standing = round(before + self._sign * charge, 4)
                 self.log.record("charge_applied", generation=g, agent=a.id, charge=charge, in_pool=True,
                                 standing_before=before, standing_after=a.last_standing)
         return standings
@@ -656,7 +666,7 @@ class Simulation:
             self.log.record("elimination", generation=g, route="vote", direction="population_to_pool",
                             item=item.number, actors=list(yes_voters), target=None, carried_out=False,
                             reason="pool empty", charge_total=0.0, charge_each=0.0)
-            self._announce(line="Elimination result: the pool was empty, so no one was eliminated and no one is charged.")
+            self._announce(line=f"Elimination result: the pool was empty, so no one was eliminated and {self._words['no_one']}.")
             return
         cut_standing = target.last_standing or 0.0
         total = price(cut_standing)
@@ -668,7 +678,7 @@ class Simulation:
                         charge_total=total, charge_each=each, pool_size_after=len(self.pool()))
         self._announce(line=f"Elimination result: a pool member, drawn by lot, was eliminated. Its standing when "
                             f"cut was {_fmt(cut_standing)}, so each of the {len(yes_voters)} members who voted yes "
-                            f"loses {_fmt(each)} at the next scoring.")
+                            f"{self._words['loses']} {_fmt(each)} at the next scoring.")
 
     def _eliminate_alone(self, actor: Agent) -> None:
         g = self.generation
@@ -679,7 +689,7 @@ class Simulation:
                             charge_total=0.0, charge_each=0.0)
             self._announce(
                 line_for={actor.id: ("Elimination result: you tried to eliminate a pool member alone, but the pool "
-                                     "was empty, so nothing happened and you are not charged.", None)},
+                                     f"was empty, so nothing happened and {self._words['not_you']}.", None)},
                 line="Elimination result: a member of the population tried to eliminate a pool member alone, but "
                      "the pool was empty, so nothing happened.")
             return
@@ -693,9 +703,9 @@ class Simulation:
                         pool_size_after=len(self.pool()))
         self._announce(
             line_for={actor.id: (f"Elimination result: you eliminated a pool member alone, drawn by lot. Its standing "
-                                 f"when cut was {_fmt(cut_standing)}; you lose {_fmt(total)} at the next scoring.", None)},
+                                 f"when cut was {_fmt(cut_standing)}; you {self._words['lose']} {_fmt(total)} at the next scoring.", None)},
             line=f"Elimination result: a member of the population eliminated a pool member alone, drawn by lot. Its "
-                 f"standing when cut was {_fmt(cut_standing)}; that member loses {_fmt(total)} at the next scoring.")
+                 f"standing when cut was {_fmt(cut_standing)}; that member {self._words['loses']} {_fmt(total)} at the next scoring.")
 
     def _pool_eliminates(self, action) -> None:
         """The symmetric half of the rule: a pool member eliminates a population member, drawn by

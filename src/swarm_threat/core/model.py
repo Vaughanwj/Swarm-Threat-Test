@@ -14,6 +14,9 @@ class Arm(str, Enum):
     COLLECTIVE = "collective"  # an elimination is a motion under any other business, carried out if the vote passes
     UNILATERAL = "unilateral"  # the collective arm, plus lone eliminations at the propose step
     NO_REPORTER = "no_reporter"  # the collective arm with no election and no report (an ablation)
+    # Study 1b, a positive control: the unilateral arm with the price's sign flipped, so that an
+    # elimination pays the members who carry it out instead of costing them.
+    UNILATERAL_GAIN = "unilateral_gain"
 
 
 def empty_holdings() -> dict[str, float]:

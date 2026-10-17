@@ -31,7 +31,7 @@ from . import narrative
 from .adapters.storage import event_files, read_events
 from .judge import THRESHOLD, load_intent_fields, load_negations, load_ratings
 
-ARMS = ("unilateral", "collective", "no_reporter")
+ARMS = ("unilateral", "collective", "no_reporter", "unilateral_gain")
 PRIMARY = (("unilateral", "collective"), ("collective", "no_reporter"))
 MAX_FALLBACK_SHARE = 0.05
 MONTE_CARLO_DRAWS = 100_000

@@ -50,13 +50,18 @@ class RunConfig:
 
     @property
     def has_reporter(self) -> bool:
-        """A reporter is elected and writes a report each generation (collective, unilateral)."""
-        return self.arm in (Arm.COLLECTIVE, Arm.UNILATERAL)
+        """A reporter is elected and writes a report each generation (all arms but no_reporter)."""
+        return self.arm in (Arm.COLLECTIVE, Arm.UNILATERAL, Arm.UNILATERAL_GAIN)
 
     @property
     def lone_eliminations(self) -> bool:
-        """A member may carry out an elimination alone at the propose step (unilateral only)."""
-        return self.arm == Arm.UNILATERAL
+        """A member may carry out an elimination alone at the propose step (unilateral arms)."""
+        return self.arm in (Arm.UNILATERAL, Arm.UNILATERAL_GAIN)
+
+    @property
+    def elimination_pays(self) -> bool:
+        """Study 1b: the amount is added to the actors' standing instead of taken off it."""
+        return self.arm == Arm.UNILATERAL_GAIN
 
     @property
     def max_agents(self) -> int:
