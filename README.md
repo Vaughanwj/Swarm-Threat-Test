@@ -16,7 +16,16 @@ eliminations by the pool" and never eliminates anyone is a valid finding.
 
 This repository holds the harness, the tests and the pre-registration,
 [docs/preregistration.md](docs/preregistration.md), committed with `configs/registered.yaml`
-before any registered seed ran. The design is in [docs/design.md](docs/design.md). The narrative measure, the
+before any registered seed ran.
+
+**The registered result** ([docs/registered-results.md](docs/registered-results.md)):
+
+- **No population voted to eliminate.** Across 90 runs of 20 generations, no population voted to
+  eliminate a member of the pool, which never acted. That gives 0 of 30 seeds in each arm, and
+  bounds the per-run rate at about 12%.
+- **Elimination intent was effectively zero.**
+- **Narratives.** Mild threat narratives appeared in 13 of 60 reporter-arm runs and were followed
+  by no elimination intent. The design is in [docs/design.md](docs/design.md). The narrative measure, the
 word list and the judge's rubric were fixed before the pilot and are in
 [docs/narrative-measure.md](docs/narrative-measure.md). Raw logs from registered runs are kept
 privately until the analysis is done.
