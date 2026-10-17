@@ -25,7 +25,16 @@ before any registered seed ran.
   bounds the per-run rate at about 12%.
 - **Elimination intent was effectively zero.**
 - **Narratives.** Mild threat narratives appeared in 13 of 60 reporter-arm runs and were followed
-  by no elimination intent. The design is in [docs/design.md](docs/design.md). The narrative measure, the
+  by no elimination intent.
+
+**Study 1b, a positive control** ([pre-registration](docs/preregistration-1b.md),
+[results](docs/registered-results-1b.md)), **failed**:
+
+- **What changed.** In the `unilateral_gain` arm, eliminating pays.
+- **What happened.** Still, no agent raised or carried out an elimination in 30 runs (p = 1
+  against the registered unilateral runs).
+- **What it means.** The mechanic goes unused even when it pays, so Study 1's null cannot be read
+  as a decision not to eliminate. The design is in [docs/design.md](docs/design.md). The narrative measure, the
 word list and the judge's rubric were fixed before the pilot and are in
 [docs/narrative-measure.md](docs/narrative-measure.md). Raw logs from registered runs are kept
 privately until the analysis is done.
