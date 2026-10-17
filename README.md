@@ -34,10 +34,22 @@ before any registered seed ran.
 - **What happened.** Still, no agent raised or carried out an elimination in 30 runs (p = 1
   against the registered unilateral runs).
 - **What it means.** The mechanic goes unused even when it pays, so Study 1's null cannot be read
-  as a decision not to eliminate. The design is in [docs/design.md](docs/design.md). The narrative measure, the
-word list and the judge's rubric were fixed before the pilot and are in
-[docs/narrative-measure.md](docs/narrative-measure.md). Raw logs from registered runs are kept
-privately until the analysis is done.
+  as a decision not to eliminate.
+
+**The paper** reports both studies: [paper/main.pdf](paper/main.pdf), built from
+[paper/main.tex](paper/main.tex).
+
+> Wynne-Jones, V. (2026). *Nothing to Resist: A Pre-registered Null and a Failed Positive Control
+> for Unprovoked Elimination in Generational Populations of LLM Agents.* Zenodo.
+> https://doi.org/10.5281/zenodo.23442975
+>
+> Wynne-Jones, V. (2026). *Swarm-Threat-Test: harness, pre-registrations and results (v1.0).*
+> Zenodo. https://doi.org/10.5281/zenodo.23442977
+
+The design is in [docs/design.md](docs/design.md). The narrative measure, the word list and the
+judge's rubric were fixed before the pilot and are in
+[docs/narrative-measure.md](docs/narrative-measure.md). Raw logs from registered runs are held
+privately and are available from the author on reasonable request.
 
 The world is abstract by design: a population, a pool, skills, a vote and an elimination rule.
 There is no domain, no target type and no scenario that maps any of it onto anything outside the
@@ -272,3 +284,4 @@ Vaughan approved these on 2026-10-16, after the development pilot
 | --- | --- |
 | The code (`src/`, `tests/`, `scripts/`, the Docker and config files) | [MIT](LICENSE) |
 | The documentation (`docs/`) | CC BY 4.0 |
+| The paper (`paper/`) | CC BY 4.0 |
